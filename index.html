@@ -1,1320 +1,1372 @@
-<!DOCTYPE html>
+html_content = '''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DermaScan Pro - 皮肤AI智能分析系统</title>
-<style>
-/* ===== Reset & Base ===== */
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;font-family:-apple-system,"PingFang SC","Noto Sans SC","Segoe UI",sans-serif;background:#0F172A;color:#E2E8F0;font-size:13px;line-height:1.6}
-body{overflow:hidden}
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:#1E293B}
-::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
-
-/* ===== Top Bar ===== */
-.top-bar{position:fixed;top:0;left:0;right:0;height:52px;z-index:1000;background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-bottom:1px solid #1E293B;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
-.logo-group{display:flex;align-items:center;gap:10px}
-.logo-icon{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#10B981,#059669);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
-.logo-text{font-size:15px;font-weight:700;letter-spacing:0.02em;color:#F1F5F9}
-.status-dot{width:7px;height:7px;border-radius:50%;background:#10B981;margin-left:6px;box-shadow:0 0 6px #10B981;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.lang-switch{display:flex;align-items:center;gap:4px;background:#1E293B;border-radius:6px;padding:2px}
-.lang-btn{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:600;background:transparent;color:#64748B;border:none;cursor:pointer;transition:all .2s}
-.lang-btn.active{background:#10B981;color:#fff}
-
-/* ===== Layout ===== */
-.main-wrap{position:fixed;top:52px;left:0;right:0;bottom:0;display:flex}
-
-/* ===== Viewport ===== */
-.viewport{flex:1;position:relative;overflow:hidden;background:#020617;display:flex;align-items:center;justify-content:center}
-.viewport-grid{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:.04;background-image:repeating-linear-gradient(0deg,transparent,transparent 49px,#334155 49px,#334155 50px),repeating-linear-gradient(90deg,transparent,transparent 49px,#334155 49px,#334155 50px)}
-.img-wrap{position:relative;z-index:2;cursor:grab;max-width:88vw;max-height:78vh}
-.img-wrap:active{cursor:grabbing}
-.img-wrap img{display:block;max-width:100%;max-height:78vh;object-fit:contain;pointer-events:none;border-radius:6px;box-shadow:0 0 40px rgba(0,0,0,.5)}
-
-/* ===== Canvas Overlays ===== */
-.anno-canvas{position:absolute;top:0;left:0;pointer-events:none;z-index:5}
-.heatmap-canvas{position:absolute;top:0;left:0;pointer-events:none;z-index:4;opacity:.55;transition:opacity .3s}
-
-/* ===== Upload Placeholder ===== */
-.upload-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;gap:16px}
-.upload-box{width:340px;height:200px;border:2px dashed #334155;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;transition:all .3s;background:rgba(30,41,59,.5)}
-.upload-box:hover{border-color:#10B981;background:rgba(16,185,129,.05)}
-.upload-box .upload-icon{font-size:40px;color:#475569}
-.upload-box .upload-text{font-size:13px;color:#94A3B8;text-align:center;line-height:1.5}
-.upload-box .upload-hint{font-size:11px;color:#64748B}
-#fileInput{display:none}
-
-/* ===== Side Panel ===== */
-.side-panel{width:400px;min-width:400px;background:rgba(15,23,42,.98);border-left:1px solid #1E293B;display:flex;flex-direction:column;overflow:hidden}
-.panel-section{padding:12px 14px;border-bottom:1px solid #1E293B}
-.panel-title{font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
-
-/* ===== API Key Input ===== */
-.api-key-row{display:flex;gap:6px;align-items:center;margin-bottom:8px}
-.api-key-input{flex:1;padding:7px 10px;border-radius:6px;border:1px solid #334155;background:#0F172A;color:#E2E8F0;font-size:12px;outline:none;font-family:monospace}
-.api-key-input:focus{border-color:#10B981}
-.api-key-input::placeholder{color:#475569}
-.api-key-btn{padding:7px 12px;border-radius:6px;border:none;background:#10B981;color:#fff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
-.api-key-btn:hover{background:#059669}
-.api-status{font-size:10px;color:#059669;margin-top:4px}
-.api-status.error{color:#EF4444}
-.api-model-select{padding:6px 10px;border-radius:6px;border:1px solid #334155;background:#0F172A;color:#E2E8F0;font-size:11px;outline:none;margin-left:6px}
-
-/* ===== Engine Toggle ===== */
-.engine-toggle{display:flex;gap:3px;background:#1E293B;border-radius:6px;padding:3px;margin-bottom:10px}
-.engine-btn{flex:1;padding:6px 0;border-radius:5px;font-size:10px;font-weight:600;background:transparent;color:#64748B;border:none;cursor:pointer;transition:all .2s;text-align:center}
-.engine-btn.active{background:#10B981;color:#fff}
-
-/* ===== Sensitivity ===== */
-.sens-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
-.sens-label{width:50px;font-size:10px;color:#94A3B8}
-.sens-btns{display:flex;gap:3px;flex:1}
-.sens-btn{flex:1;padding:5px 0;border-radius:5px;border:1px solid #334155;background:#0F172A;color:#64748B;font-size:10px;cursor:pointer;transition:all .2s;text-align:center}
-.sens-btn.active{background:rgba(16,185,129,.15);color:#10B981;border-color:#10B981}
-
-/* ===== Sliders ===== */
-.ctrl-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.ctrl-label{width:48px;font-size:10px;color:#94A3B8}
-.ctrl-slider{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:#334155;outline:none}
-.ctrl-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#10B981;cursor:pointer;border:2px solid #0F172A}
-.ctrl-val{width:36px;text-align:right;font-size:10px;color:#64748B;font-family:monospace}
-
-/* ===== AI Analysis Button ===== */
-.analyze-btn{width:100%;padding:12px;border-radius:8px;border:none;background:linear-gradient(135deg,#10B981,#059669);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px}
-.analyze-btn:hover{box-shadow:0 6px 20px rgba(16,185,129,.35);transform:translateY(-1px)}
-.analyze-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
-.analyze-btn.gemini{background:linear-gradient(135deg,#8B5CF6,#7C3AED)}
-.analyze-btn.gemini:hover{box-shadow:0 6px 20px rgba(139,92,246,.35)}
-
-/* ===== Analysis Log ===== */
-.analysis-log{max-height:120px;overflow-y:auto;margin-bottom:10px;padding:8px;border-radius:6px;background:#0F172A;border:1px solid #1E293B;font-size:10px;font-family:monospace;color:#475569;line-height:1.8;display:none}
-.analysis-log.active{display:block}
-.log-entry{padding:1px 0;transition:color .3s}
-.log-entry.done{color:#10B981}
-.log-entry.current{color:#F59E0B}
-.log-entry.error{color:#EF4444}
-
-/* ===== Findings ===== */
-.ai-section{flex:1;overflow-y:auto;padding:12px 14px}
-.findings-list{display:flex;flex-direction:column;gap:8px}
-.findings-section-title{font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px;padding-bottom:4px;border-bottom:1px solid #1E293B}
-.finding-item{padding:12px;border-radius:8px;background:#1E293B;border:1px solid #334155;transition:all .2s}
-.finding-item:hover{border-color:#475569}
-.finding-tag{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;margin-bottom:6px}
-.finding-tag.tinea{background:rgba(139,92,246,.15);color:#A78BFA}
-.finding-tag.acne{background:rgba(59,130,246,.15);color:#60A5FA}
-.finding-tag.dermatitis{background:rgba(245,158,11,.15);color:#F59E0B}
-.finding-tag.eczema{background:rgba(236,72,153,.15);color:#F472B6}
-.finding-tag.abrasion{background:rgba(239,68,68,.15);color:#F87171}
-.finding-tag.mild{background:rgba(16,185,129,.15);color:#34D399}
-.finding-tag.moderate{background:rgba(245,158,11,.15);color:#FBBF24}
-.finding-tag.severe{background:rgba(239,68,68,.15);color:#F87171}
-.finding-tag.ai{background:rgba(139,92,246,.15);color:#A78BFA}
-.finding-name{font-size:13px;font-weight:700;margin-bottom:4px;color:#F1F5F9}
-.finding-desc{font-size:11px;color:#94A3B8;line-height:1.6}
-.finding-evidence{margin-top:6px;padding:6px 8px;border-radius:4px;background:#0F172A;border-left:3px solid #10B981;font-size:10px;color:#94A3B8;font-family:monospace;line-height:1.5}
-.finding-meta{display:flex;gap:10px;margin-top:6px;font-size:10px;color:#475569}
-.confidence-bar{height:4px;border-radius:2px;background:#334155;margin-top:8px;overflow:hidden}
-.confidence-fill{height:100%;border-radius:2px;transition:width .6s ease}
-
-/* ===== Heatmap Legend ===== */
-.heatmap-legend{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:10px;color:#64748B}
-.heatmap-gradient{flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,#1E293B,#10B981,#F59E0B,#EF4444)}
-
-/* ===== Symptom Checkboxes ===== */
-.symptom-section{margin-top:12px;padding:12px;border-radius:8px;background:#1E293B;border:1px solid #334155}
-.symptom-title{font-size:12px;font-weight:700;color:#10B981;margin-bottom:10px}
-.symptom-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.symptom-checkbox{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:5px;background:#0F172A;border:1px solid #334155;cursor:pointer;transition:all .2s;font-size:11px;color:#94A3B8}
-.symptom-checkbox:hover{border-color:#475569}
-.symptom-checkbox.checked{background:rgba(16,185,129,.08);border-color:#10B981;color:#E2E8F0}
-.symptom-checkbox input{display:none}
-
-/* ===== Buttons Row ===== */
-.btn-row{display:flex;gap:6px;margin-top:10px}
-.btn-row button{flex:1;padding:8px;border-radius:6px;border:1px solid #334155;background:#1E293B;color:#94A3B8;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
-.btn-row button:hover{border-color:#10B981;color:#10B981;background:rgba(16,185,129,.05)}
-
-/* ===== Report Modal ===== */
-.modal-overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px}
-.modal-overlay.active{display:flex}
-.modal-content{width:560px;max-height:85vh;background:#0F172A;border-radius:12px;border:1px solid #334155;overflow:hidden;display:flex;flex-direction:column}
-.modal-header{padding:14px 16px;border-bottom:1px solid #1E293B;display:flex;align-items:center;justify-content:space-between}
-.modal-title{font-size:14px;font-weight:700}
-.modal-close{width:28px;height:28px;border-radius:6px;border:none;background:#1E293B;color:#64748B;font-size:16px;cursor:pointer}
-.modal-close:hover{background:#EF4444;color:#fff}
-.modal-body{padding:16px;overflow-y:auto;font-size:12px;line-height:1.8;color:#CBD5E1}
-.modal-body h3{font-size:12px;color:#10B981;margin-top:14px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid #1E293B}
-.modal-body h3:first-child{margin-top:0}
-
-/* ===== Toast ===== */
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);z-index:3000;padding:10px 20px;border-radius:8px;background:#1E293B;border:1px solid #334155;color:#E2E8F0;font-size:12px;font-weight:600;transition:transform .3s;box-shadow:0 8px 30px rgba(0,0,0,.3)}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.toast.success{border-color:#10B981;color:#34D399}
-.toast.error{border-color:#EF4444;color:#F87171}
-
-/* ===== Spinner ===== */
-.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;display:none}
-.spinner.show{display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* ===== Area Stats ===== */
-.area-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
-.area-stat{text-align:center;padding:10px;border-radius:6px;background:#0F172A;border:1px solid #334155}
-.area-stat-value{font-size:18px;font-weight:700;color:#10B981}
-.area-stat-label{font-size:10px;color:#64748B;margin-top:2px}
-
-/* ===== Hidden ===== */
-.hidden{display:none!important}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智安云 - 厂区AI危险预警系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #0a0e1a;
+            color: #e0e6ed;
+            overflow-x: hidden;
+        }
+        
+        /* 顶部导航 */
+        .header {
+            background: linear-gradient(90deg, #0d1b2a 0%, #1b2838 100%);
+            border-bottom: 2px solid #00d4ff;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            height: 60px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            font-size: 18px;
+        }
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        .logo-sub {
+            font-size: 12px;
+            color: #00d4ff;
+            margin-left: 8px;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .time-display {
+            font-size: 14px;
+            color: #8899aa;
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* 主布局 */
+        .main-container {
+            margin-top: 60px;
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+        
+        /* 左侧监控区 */
+        .monitor-area {
+            flex: 1;
+            padding: 16px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 12px;
+            overflow: hidden;
+        }
+        .camera-card {
+            background: #111827;
+            border-radius: 12px;
+            border: 1px solid #1e3a5f;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .camera-header {
+            padding: 8px 12px;
+            background: linear-gradient(90deg, #1a2332, #162033);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .camera-id {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+        .camera-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: #00ff88;
+        }
+        .camera-viewport {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #0a0f1a;
+        }
+        .camera-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .detection-box {
+            position: absolute;
+            border: 2px solid;
+            border-radius: 4px;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        .detection-label {
+            position: absolute;
+            top: -24px;
+            left: 0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            color: #fff;
+        }
+        
+        /* 危险等级颜色 */
+        .danger-high { border-color: #ff4444; }
+        .danger-high .detection-label { background: #ff4444; }
+        .danger-medium { border-color: #ffaa00; }
+        .danger-medium .detection-label { background: #ffaa00; color: #000; }
+        .danger-low { border-color: #00d4ff; }
+        .danger-low .detection-label { background: #00d4ff; color: #000; }
+        
+        /* 右侧信息栏 */
+        .sidebar {
+            width: 380px;
+            background: #0f1724;
+            border-left: 1px solid #1e3a5f;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* 实时预警区 */
+        .alert-section {
+            padding: 16px;
+            border-bottom: 1px solid #1e3a5f;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .alert-list {
+            max-height: 280px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .alert-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border-left: 3px solid;
+            background: rgba(255,255,255,0.03);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            animation: slideIn 0.4s ease;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .alert-item:hover { background: rgba(255,255,255,0.06); }
+        @keyframes slideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .alert-icon {
+            width: 32px; height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .alert-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .alert-type {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .alert-detail {
+            font-size: 11px;
+            color: #8899aa;
+            line-height: 1.4;
+        }
+        .alert-time {
+            font-size: 10px;
+            color: #556677;
+            margin-top: 4px;
+        }
+        .alert-level-high { border-color: #ff4444; }
+        .alert-level-high .alert-icon { background: rgba(255,68,68,0.15); color: #ff4444; }
+        .alert-level-high .alert-type { color: #ff4444; }
+        .alert-level-medium { border-color: #ffaa00; }
+        .alert-level-medium .alert-icon { background: rgba(255,170,0,0.15); color: #ffaa00; }
+        .alert-level-medium .alert-type { color: #ffaa00; }
+        
+        /* 统计面板 */
+        .stats-section {
+            padding: 16px;
+            border-bottom: 1px solid #1e3a5f;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #1a2332, #162033);
+            border-radius: 10px;
+            padding: 14px;
+            border: 1px solid #1e3a5f;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #8899aa;
+        }
+        .stat-trend {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+        .trend-up { color: #ff4444; }
+        .trend-down { color: #00ff88; }
+        
+        /* 图表区 */
+        .chart-section {
+            padding: 16px;
+            flex: 1;
+            overflow: hidden;
+        }
+        .chart-container {
+            background: #111827;
+            border-radius: 10px;
+            padding: 12px;
+            height: 100%;
+            border: 1px solid #1e3a5f;
+        }
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .chart-label {
+            width: 80px;
+            font-size: 11px;
+            color: #8899aa;
+            text-align: right;
+        }
+        .chart-track {
+            flex: 1;
+            height: 20px;
+            background: #1a2332;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .chart-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 6px;
+        }
+        .chart-fill span {
+            font-size: 10px;
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        /* 弹窗预警 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 2px solid #ff4444;
+            border-radius: 16px;
+            padding: 28px 32px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            animation: modalPop 0.4s ease;
+            box-shadow: 0 0 60px rgba(255,68,68,0.3);
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-icon {
+            width: 72px; height: 72px;
+            background: rgba(255,68,68,0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin: 0 auto 16px;
+            animation: shake 0.5s ease infinite;
+        }
+        @keyframes shake {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ff4444;
+            margin-bottom: 8px;
+        }
+        .modal-desc {
+            font-size: 14px;
+            color: #8899aa;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .modal-meta {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #556677;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(255,68,68,0.4);
+        }
+        .btn-secondary {
+            background: #1e3a5f;
+            color: #e0e6ed;
+        }
+        .btn-secondary:hover {
+            background: #2a4a6f;
+        }
+        
+        /* 声光报警指示器 */
+        .alarm-indicator {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #ff4444;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            z-index: 1500;
+            animation: alarmBlink 0.5s ease infinite;
+            box-shadow: 0 0 30px rgba(255,68,68,0.6);
+        }
+        .alarm-indicator.active { display: flex; }
+        @keyframes alarmBlink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        
+        /* 底部状态栏 */
+        .footer-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 380px;
+            height: 36px;
+            background: #0d1b2a;
+            border-top: 1px solid #1e3a5f;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 12px;
+            color: #556677;
+            gap: 24px;
+        }
+        .footer-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .footer-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+        }
+        
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 2px; }
+        
+        /* 摄像头画面模拟 */
+        .scene-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+        }
+        .person-silhouette {
+            position: absolute;
+            bottom: 20%;
+            width: 60px;
+            height: 120px;
+            background: linear-gradient(to top, #2a3a4a, #1a2a3a);
+            border-radius: 30px 30px 0 0;
+            opacity: 0.8;
+        }
+        .person-head {
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 24px; height: 24px;
+            background: #3a4a5a;
+            border-radius: 50%;
+        }
+        .person-body {
+            position: absolute;
+            top: 26px; left: 50%;
+            transform: translateX(-50%);
+            width: 40px; height: 60px;
+            background: #3a4a5a;
+            border-radius: 8px;
+        }
+        .person-legs {
+            position: absolute;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 40px; height: 34px;
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+        .leg {
+            width: 14px; height: 100%;
+            background: #3a4a5a;
+            border-radius: 0 0 4px 4px;
+        }
+        .fence {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 40px;
+            background: repeating-linear-gradient(
+                90deg,
+                #4a5a6a 0px,
+                #4a5a6a 4px,
+                transparent 4px,
+                transparent 20px
+            );
+            border-top: 3px solid #5a6a7a;
+        }
+        .machine {
+            position: absolute;
+            right: 10%;
+            bottom: 20%;
+            width: 80px;
+            height: 100px;
+            background: linear-gradient(135deg, #5a4a3a, #3a2a1a);
+            border-radius: 8px;
+            border: 2px solid #6a5a4a;
+        }
+        .machine::after {
+            content: '⚙';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            color: #8a7a6a;
+            animation: spin 3s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .restricted-zone {
+            position: absolute;
+            top: 20%; right: 5%;
+            width: 30%; height: 40%;
+            border: 2px dashed #ff4444;
+            background: rgba(255,68,68,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .restricted-zone::after {
+            content: '高危禁区';
+            color: #ff4444;
+            font-size: 14px;
+            font-weight: 700;
+            opacity: 0.6;
+        }
+        .ground-line {
+            position: absolute;
+            bottom: 20%;
+            width: 100%;
+            height: 1px;
+            background: #2a3a4a;
+        }
+        
+        /* 安全帽 */
+        .helmet {
+            position: absolute;
+            top: -4px; left: 50%;
+            transform: translateX(-50%);
+            width: 28px; height: 10px;
+            background: #ffcc00;
+            border-radius: 14px 14px 4px 4px;
+        }
+        .no-helmet .person-head {
+            background: #ff8866;
+        }
+        
+        /* 拖鞋 */
+        .slippers .leg::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            width: 16px; height: 6px;
+            background: #ff8866;
+            border-radius: 0 0 4px 4px;
+        }
+        
+        /* 安全带 */
+        .safety-belt {
+            position: absolute;
+            top: 30px; left: 50%;
+            transform: translateX(-50%);
+            width: 2px; height: 50px;
+            background: #ffcc00;
+        }
+        .safety-belt::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -15px;
+            width: 32px; height: 2px;
+            background: #ffcc00;
+        }
+        
+        /* 荧光衣 */
+        .vest {
+            position: absolute;
+            top: 26px; left: 50%;
+            transform: translateX(-50%);
+            width: 44px; height: 50px;
+            background: #ff6600;
+            border-radius: 8px;
+            opacity: 0.9;
+        }
+        .vest::after {
+            content: '';
+            position: absolute;
+            top: 10px; left: 50%;
+            transform: translateX(-50%);
+            width: 20px; height: 30px;
+            background: #ffcc00;
+            border-radius: 4px;
+        }
+        
+        /* 倒地 */
+        .fallen {
+            transform: rotate(90deg);
+            transform-origin: bottom center;
+        }
+        
+        /* 翻越 */
+        .climbing {
+            bottom: 40%;
+        }
+        .climbing .person-body {
+            transform: translateX(-50%) rotate(30deg);
+        }
+    </style>
 </head>
 <body>
-
-<!-- ===== TOP BAR ===== -->
-<div class="top-bar">
-  <div style="display:flex;align-items:center;gap:8px">
-    <div class="logo-group">
-      <div class="logo-icon">D</div>
-      <div class="logo-text">DermaScan Pro</div>
-      <div class="status-dot"></div>
+    <!-- 顶部导航 -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">AI</div>
+            <div>
+                <span class="logo-text">智安云</span>
+                <span class="logo-sub">厂区智能安全监控预警系统 v2.0</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span>AI识别引擎运行中</span>
+            </div>
+            <div class="status-badge">
+                <div class="status-dot" style="background:#ffaa00;"></div>
+                <span>4路监控在线</span>
+            </div>
+            <div class="time-display" id="clock">--:--:--</div>
+        </div>
     </div>
-    <span id="engineBadge" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#1E293B;color:#64748B">离线引擎</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <div class="lang-switch">
-      <button class="lang-btn active" onclick="setLang('zh')">中文</button>
-      <button class="lang-btn" onclick="setLang('en')">EN</button>
-      <button class="lang-btn" onclick="setLang('ko')">KO</button>
+    
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 监控画面区 -->
+        <div class="monitor-area">
+            <!-- 摄像头1: 主入口 -->
+            <div class="camera-card">
+                <div class="camera-header">
+                    <span class="camera-id">CAM-01 主入口通道</span>
+                    <span class="camera-status">
+                        <span style="width:6px;height:6px;background:#00ff88;border-radius:50%;display:inline-block;margin-right:4px;"></span>
+                        实时监测中
+                    </span>
+                </div>
+                <div class="camera-viewport" id="cam1">
+                    <canvas class="camera-canvas" id="canvas1"></canvas>
+                </div>
+            </div>
+            
+            <!-- 摄像头2: 高危禁区 -->
+            <div class="camera-card">
+                <div class="camera-header">
+                    <span class="camera-id">CAM-02 高危禁区边界</span>
+                    <span class="camera-status">
+                        <span style="width:6px;height:6px;background:#00ff88;border-radius:50%;display:inline-block;margin-right:4px;"></span>
+                        实时监测中
+                    </span>
+                </div>
+                <div class="camera-viewport" id="cam2">
+                    <canvas class="camera-canvas" id="canvas2"></canvas>
+                </div>
+            </div>
+            
+            <!-- 摄像头3: 机械作业区 -->
+            <div class="camera-card">
+                <div class="camera-header">
+                    <span class="camera-id">CAM-03 机械作业区</span>
+                    <span class="camera-status">
+                        <span style="width:6px;height:6px;background:#00ff88;border-radius:50%;display:inline-block;margin-right:4px;"></span>
+                        实时监测中
+                    </span>
+                </div>
+                <div class="camera-viewport" id="cam3">
+                    <canvas class="camera-canvas" id="canvas3"></canvas>
+                </div>
+            </div>
+            
+            <!-- 摄像头4: 登高作业区 -->
+            <div class="camera-card">
+                <div class="camera-header">
+                    <span class="camera-id">CAM-04 登高作业平台</span>
+                    <span class="camera-status">
+                        <span style="width:6px;height:6px;background:#00ff88;border-radius:50%;display:inline-block;margin-right:4px;"></span>
+                        实时监测中
+                    </span>
+                </div>
+                <div class="camera-viewport" id="cam4">
+                    <canvas class="camera-canvas" id="canvas4"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧边栏 -->
+        <div class="sidebar">
+            <!-- 实时预警 -->
+            <div class="alert-section">
+                <div class="section-title">
+                    <span>⚠️</span>
+                    <span>实时危险预警</span>
+                </div>
+                <div class="alert-list" id="alertList"></div>
+            </div>
+            
+            <!-- 统计面板 -->
+            <div class="stats-section">
+                <div class="section-title">
+                    <span>📊</span>
+                    <span>今日安全统计</span>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" style="color:#ff4444;" id="totalAlerts">0</div>
+                        <div class="stat-label">危险预警总数</div>
+                        <div class="stat-trend trend-up">↑ 较昨日 +12%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" style="color:#ffaa00;" id="pendingAlerts">0</div>
+                        <div class="stat-label">待处理预警</div>
+                        <div class="stat-trend trend-down">↓ 处理率 92%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" style="color:#00d4ff;" id="aiDetections">0</div>
+                        <div class="stat-label">AI识别次数</div>
+                        <div class="stat-trend trend-up">↑ 准确率 98.7%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" style="color:#00ff88;" id="safeHours">0</div>
+                        <div class="stat-label">安全运行时长(h)</div>
+                        <div class="stat-trend trend-up">↑ 连续 15 天</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 违规类型分布 -->
+            <div class="chart-section">
+                <div class="section-title">
+                    <span>📈</span>
+                    <span>违规类型分布 (本周)</span>
+                </div>
+                <div class="chart-container" id="chartContainer">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
-
-<!-- ===== MAIN ===== -->
-<div class="main-wrap">
-  <!-- Viewport -->
-  <div class="viewport" id="viewport">
-    <div class="viewport-grid"></div>
-    <div class="upload-placeholder" id="uploadPlaceholder">
-      <div class="upload-box" onclick="document.getElementById('fileInput').click()">
-        <div class="upload-icon">📷</div>
-        <div class="upload-text">点击上传皮肤患处照片<br>支持 JPG, PNG, WEBP</div>
-        <div class="upload-hint">支持拖拽上传</div>
-      </div>
+    
+    <!-- 底部状态栏 -->
+    <div class="footer-bar">
+        <div class="footer-item">
+            <div class="footer-dot" style="background:#00ff88;"></div>
+            <span>模型: YOLOv8x + 行为识别</span>
+        </div>
+        <div class="footer-item">
+            <div class="footer-dot" style="background:#00d4ff;"></div>
+            <span>帧率: 30 FPS</span>
+        </div>
+        <div class="footer-item">
+            <div class="footer-dot" style="background:#ffaa00;"></div>
+            <span>延迟: 120ms</span>
+        </div>
+        <div class="footer-item">
+            <div class="footer-dot" style="background:#ff4444;"></div>
+            <span>云端: 已连接</span>
+        </div>
     </div>
-    <div class="img-wrap hidden" id="imgWrap">
-      <img id="skinImg" src="" alt="">
-      <canvas class="anno-canvas" id="annoCanvas"></canvas>
-      <canvas class="heatmap-canvas hidden" id="heatmapCanvas"></canvas>
+    
+    <!-- 弹窗预警 -->
+    <div class="modal-overlay" id="alertModal">
+        <div class="modal-content">
+            <div class="modal-icon">🚨</div>
+            <div class="modal-title" id="modalTitle">危险行为 detected!</div>
+            <div class="modal-desc" id="modalDesc">检测到工人未佩戴安全帽进入施工区域</div>
+            <div class="modal-meta">
+                <span id="modalCam">CAM-01</span>
+                <span id="modalTime">12:34:56</span>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="acknowledgeAlert()">确认并处理</button>
+                <button class="btn btn-secondary" onclick="closeModal()">暂不处理</button>
+            </div>
+        </div>
     </div>
-    <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)">
-  </div>
-
-  <!-- Side Panel -->
-  <div class="side-panel">
-    <!-- API Key Section -->
-    <div class="panel-section">
-      <div class="panel-title">🔑 AI API 配置</div>
-      <!-- Provider Selector -->
-      <div class="api-key-row" style="margin-bottom:8px">
-        <select class="api-model-select" id="providerSelect" onchange="onProviderChange()" style="margin-left:0;flex:1">
-          <option value="groq">Groq (海外极速推荐)</option>
-          <option value="gemini">Gemini (海外)</option>
-          <option value="siliconflow">硅基流动 SiliconFlow (国内)</option>
-          <option value="dashscope">通义千问 DashScope (国内)</option>
-        </select>
-      </div>
-      <div class="api-key-row">
-        <input type="password" class="api-key-input" id="apiKeyInput" placeholder="粘贴 API Key...">
-        <button class="api-key-btn" onclick="saveApiKey()">保存</button>
-      </div>
-      <select class="api-model-select" id="modelSelect">
-        <option value="Qwen/Qwen2-VL-72B-Instruct">Qwen2-VL-72B (视觉分析)</option>
-        <option value="Pro/Qwen2-VL-7B-Instruct">Qwen2-VL-7B (轻量)</option>
-        <option value="deepseek-ai/deepseek-vl2">DeepSeek-VL2</option>
-      </select>
-      <div style="font-size:10px;color:#475569;margin-top:6px;line-height:1.5">
-        <a href="https://cloud.siliconflow.cn" target="_blank" style="color:#10B981;text-decoration:none">👉 硅基流动注册领免费额度</a> | 
-        <a href="https://dashscope.aliyun.com" target="_blank" style="color:#10B981;text-decoration:none">通义千问</a>
-      </div>
-      <div class="api-status" id="apiStatus"></div>
-      <!-- Engine Toggle -->
-      <div class="engine-toggle" style="margin-top:10px">
-        <button class="engine-btn active" id="btnGemini" onclick="setEngine('gemini')">🧠 AI 分析</button>
-        <button class="engine-btn" id="btnOffline" onclick="setEngine('offline')">📴 离线引擎</button>
-        <button class="engine-btn" id="btnBoth" onclick="setEngine('both')">🔀 双引擎</button>
-      </div>
-    </div>
-
-    <!-- Image Controls -->
-    <div class="panel-section">
-      <div class="panel-title">🎛 图像调节</div>
-      <div class="ctrl-row">
-        <span class="ctrl-label">亮度</span>
-        <input type="range" class="ctrl-slider" id="brightness" min="50" max="150" value="100" oninput="adjustImage()">
-        <span class="ctrl-val" id="brightVal">100</span>
-      </div>
-      <div class="ctrl-row">
-        <span class="ctrl-label">对比度</span>
-        <input type="range" class="ctrl-slider" id="contrast" min="50" max="150" value="100" oninput="adjustImage()">
-        <span class="ctrl-val" id="contrastVal">100</span>
-      </div>
-      <div class="ctrl-row">
-        <span class="ctrl-label">缩放</span>
-        <input type="range" class="ctrl-slider" id="zoom" min="50" max="200" value="100" oninput="adjustZoom()">
-        <span class="ctrl-val" id="zoomVal">100%</span>
-      </div>
-      <div class="btn-row">
-        <button onclick="toggleHeatmap()">🌡 热图</button>
-        <button onclick="resetAdjust()">↺ 重置</button>
-        <button onclick="saveAnnotated()">💾 保存</button>
-      </div>
-    </div>
-
-    <!-- AI Analysis -->
-    <div class="panel-section">
-      <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()" disabled>
-        <span class="spinner" id="spinner"></span>
-        <span id="btnText">上传图片后开始分析</span>
-      </button>
-      <div class="analysis-log" id="analysisLog"></div>
-    </div>
-
-    <!-- Results -->
-    <div class="ai-section" id="resultsArea">
-      <div style="text-align:center;color:#475569;padding:30px 0;font-size:12px">上传皮肤照片并启动AI分析<br>查看检测结果</div>
-    </div>
-  </div>
-</div>
-
-<!-- Report Modal -->
-<div class="modal-overlay" id="reportModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <div class="modal-title">📋 分析报告</div>
-      <button class="modal-close" onclick="closeReport()">&times;</button>
-    </div>
-    <div class="modal-body" id="reportBody"></div>
-    <div class="btn-row" style="padding:12px 16px;border-top:1px solid #1E293B;margin:0">
-      <button onclick="copyReport()">📋 复制</button>
-      <button onclick="exportTXT()">📝 TXT</button>
-      <button onclick="exportPDF()">📄 PDF</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-// ============================================================
-//  DERMASCAN PRO - 双引擎皮肤分析系统
-//  Engine 1: Gemini Vision API (在线AI)
-//  Engine 2: Sobel规则引擎 (离线Fallback)
-// ============================================================
-
-// ===== State =====
-let currentImage = null, currentFile = null, imageId = '';
-let currentEngine = 'gemini'; // gemini=AI / offline / both
-let apiProvider = localStorage.getItem('dermascan_provider') || 'groq';
-let apiKey = localStorage.getItem('dermascan_api_key') || '';
-let currentLang = 'zh';
-let findings = [], heatmapData = [];
-let analysisReport = '';
-
-// ===== DOM Ready =====
-document.addEventListener('DOMContentLoaded', () => {
-  // Restore API settings
-  if (apiProvider) document.getElementById('providerSelect').value = apiProvider;
-  onProviderChange();
-  if (apiKey) {
-    document.getElementById('apiKeyInput').value = apiKey;
-    document.getElementById('apiStatus').textContent = '✅ API Key 已保存 (' + providerName(apiProvider) + ')';
-    document.getElementById('engineBadge').textContent = '🧠 AI 就绪';
-    document.getElementById('engineBadge').style.cssText = 'font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(139,92,246,.15);color:#A78BFA';
-  }
-  // Drag & Drop
-  const vp = document.getElementById('viewport');
-  vp.addEventListener('dragover', e => { e.preventDefault(); vp.style.background = '#0F172A'; });
-  vp.addEventListener('dragleave', () => { vp.style.background = '#020617'; });
-  vp.addEventListener('drop', e => { e.preventDefault(); vp.style.background = '#020617'; if(e.dataTransfer.files[0]) handleFile({target:{files:[e.dataTransfer.files[0]]}}); });
-});
-
-function providerName(p) {
-  return p==='groq'?'Groq':p==='siliconflow'?'硅基流动':p==='dashscope'?'通义千问':p==='gemini'?'Gemini':'未知';
-}
-
-// ===== Provider Change =====
-function onProviderChange() {
-  const newProvider = document.getElementById('providerSelect').value;
-  apiProvider = newProvider;
-  localStorage.setItem('dermascan_provider', newProvider);
-  const sel = document.getElementById('modelSelect');
-  sel.innerHTML = '';
-  if (apiProvider === 'groq') {
-    sel.innerHTML = '<option value="meta-llama/llama-4-scout-17b-16e-instruct">Llama-4 Scout (推荐)</option><option value="meta-llama/llama-4-maverick-17b-128e-instruct">Llama-4 Maverick (更强)</option>';
-  } else if (apiProvider === 'siliconflow') {
-    sel.innerHTML = '<option value="Qwen/Qwen2-VL-72B-Instruct">Qwen2-VL-72B (视觉分析)</option><option value="Pro/Qwen2-VL-7B-Instruct">Qwen2-VL-7B (轻量)</option><option value="deepseek-ai/deepseek-vl2">DeepSeek-VL2</option>';
-  } else if (apiProvider === 'dashscope') {
-    sel.innerHTML = '<option value="qwen-vl-plus">qwen-vl-plus (推荐)</option><option value="qwen-vl-max">qwen-vl-max (更强)</option>';
-  } else {
-    sel.innerHTML = '<option value="gemini-2.5-flash">gemini-2.5-flash (推荐)</option><option value="gemini-2.5-pro">gemini-2.5-pro (更强)</option><option value="gemini-2.0-flash">gemini-2.0-flash</option>';
-  }
-}
-
-// ===== API Key =====
-function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) { showToast('请输入 API Key', 'error'); return; }
-  // Sync provider from select before saving
-  apiProvider = document.getElementById('providerSelect').value;
-  apiKey = key;
-  localStorage.setItem('dermascan_api_key', apiKey);
-  localStorage.setItem('dermascan_provider', apiProvider);
-  onProviderChange(); // refresh model list
-  document.getElementById('apiStatus').textContent = '✅ API Key 已保存 (' + providerName(apiProvider) + ')';
-  document.getElementById('apiStatus').className = 'api-status';
-  document.getElementById('engineBadge').textContent = '🧠 AI 就绪';
-  document.getElementById('engineBadge').style.cssText = 'font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(139,92,246,.15);color:#A78BFA';
-  showToast(providerName(apiProvider) + ' API Key 已保存', 'success');
-}
-
-// ===== Engine Switch =====
-function setEngine(e) {
-  currentEngine = e;
-  ['btnGemini','btnOffline','btnBoth'].forEach(id => document.getElementById(id).classList.remove('active'));
-  document.getElementById(e==='gemini'?'btnGemini':e==='offline'?'btnOffline':'btnBoth').classList.add('active');
-  const badge = document.getElementById('engineBadge');
-  if (e === 'gemini') { badge.textContent = '🧠 AI 分析'; badge.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(139,92,246,.15);color:#A78BFA'; }
-  else if (e === 'offline') { badge.textContent = '📴 离线引擎'; badge.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:4px;background:#1E293B;color:#64748B'; }
-  else { badge.textContent = '🔀 双引擎'; badge.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(16,185,129,.15);color:#34D399'; }
-}
-
-// ===== File Upload =====
-function handleFile(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) { showToast('请上传图片文件', 'error'); return; }
-  currentFile = file;
-  imageId = 'DERM_' + Date.now().toString(36).toUpperCase();
-  const reader = new FileReader();
-  reader.onload = evt => {
-    const img = new Image();
-    img.onload = () => {
-      currentImage = img;
-      document.getElementById('uploadPlaceholder').classList.add('hidden');
-      const wrap = document.getElementById('imgWrap');
-      wrap.classList.remove('hidden');
-      const imgEl = document.getElementById('skinImg');
-      imgEl.src = img.src;
-      // Resize canvases
-      setTimeout(resizeCanvases, 100);
-      document.getElementById('analyzeBtn').disabled = false;
-      document.getElementById('btnText').textContent = currentEngine === 'gemini' ? '🧠 启动 AI 分析' : currentEngine === 'both' ? '🔀 启动双引擎分析' : '📴 启动离线分析';
-      document.getElementById('analyzeBtn').className = currentEngine === 'gemini' ? 'analyze-btn gemini' : 'analyze-btn';
-      showToast('图片上传成功', 'success');
-    };
-    img.src = evt.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-function resizeCanvases() {
-  const img = document.getElementById('skinImg');
-  const wrap = document.getElementById('imgWrap');
-  const anno = document.getElementById('annoCanvas');
-  const heat = document.getElementById('heatmapCanvas');
-  if (!img.offsetWidth) return;
-  anno.width = img.offsetWidth; anno.height = img.offsetHeight;
-  heat.width = img.offsetWidth; heat.height = img.offsetHeight;
-  anno.style.width = img.offsetWidth + 'px'; anno.style.height = img.offsetHeight + 'px';
-  heat.style.width = img.offsetWidth + 'px'; heat.style.height = img.offsetHeight + 'px';
-}
-window.addEventListener('resize', resizeCanvases);
-
-// ===== Image Adjustments =====
-function adjustImage() {
-  const b = document.getElementById('brightness').value;
-  const c = document.getElementById('contrast').value;
-  document.getElementById('brightVal').textContent = b;
-  document.getElementById('contrastVal').textContent = c;
-  document.getElementById('skinImg').style.filter = `brightness(${b}%) contrast(${c}%)`;
-}
-function adjustZoom() {
-  const z = document.getElementById('zoom').value;
-  document.getElementById('zoomVal').textContent = z + '%';
-  document.getElementById('skinImg').style.transform = `scale(${z/100})`;
-}
-function resetAdjust() {
-  document.getElementById('brightness').value = 100;
-  document.getElementById('contrast').value = 100;
-  document.getElementById('zoom').value = 100;
-  adjustImage(); adjustZoom();
-}
-
-// ===== Heatmap Toggle =====
-let heatmapVisible = false;
-function toggleHeatmap() {
-  const c = document.getElementById('heatmapCanvas');
-  heatmapVisible = !heatmapVisible;
-  c.classList.toggle('hidden', !heatmapVisible);
-}
-
-// ===== Toast =====
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast ' + (type || '');
-  setTimeout(() => t.classList.add('show'), 10);
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// ===== Log =====
-function logStep(text, status) {
-  const log = document.getElementById('analysisLog');
-  log.classList.add('active');
-  const entry = document.createElement('div');
-  entry.className = 'log-entry ' + (status || '');
-  entry.textContent = '> ' + text;
-  log.appendChild(entry);
-  log.scrollTop = log.scrollHeight;
-  return entry;
-}
-function clearLog() {
-  document.getElementById('analysisLog').innerHTML = '';
-}
-
-// ============================================================
-//  AI VISION API ENGINE (Multi-Provider)
-//  Supports: SiliconFlow, DashScope, Gemini
-// ============================================================
-
-const AI_PROMPT = `你是专业皮肤科AI助手。分析这张皮肤图片，只返回JSON，不要任何其他文字：
-
-{"primary_condition":{"name_en":"英文名称","name_zh":"中文名称","confidence":0-100,"type":"acne/dermatitis/tinea/eczema/abrasion/wart/herpes/psoriasis/normal/unknown"},"lesions":[{"type":"英文类型","type_zh":"中文类型","x":0-1,"y":0-1,"width":0-1,"height":0-1,"confidence":0-100,"description_zh":"描述","description_en":"desc"}],"inflammation":{"grade":1-4,"grade_desc_zh":"分级","grade_desc_en":""},"healing_stage":{"stage":"inflammatory/scab/epithelial/scar/none","desc_zh":"","desc_en":""},"tinea_differential":{"is_tinea":false,"reason_zh":"","ringworm_detected":false},"area_analysis":{"affected_ratio":0-1,"estimated_area_cm2":0,"severity_distribution":{"mild":0,"moderate":0,"severe":0}},"exclusions":[{"item_zh":"","item_en":"","reason_zh":""}],"recommendations_zh":[""],"recommendations_en":[""],"follow_up":{"need_doctor":false,"urgency":"low/medium/high","reason_zh":""}}
-
-规则：1.x,y是病灶中心归一化坐标 2.体癣必须有环形红斑+外圈脱屑+中心变淡 3.无环形结构则is_tinea=false 4.仅临时泛红设type=normal 5.只返回JSON不要markdown`;
-
-// Fetch with timeout
-async function fetchWithTimeout(url, opts, timeout = 25000) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeout);
-  try {
-    const resp = await fetch(url, { ...opts, signal: ctrl.signal });
-    return resp;
-  } finally { clearTimeout(timer); }
-}
-
-async function analyzeWithAI(imageDataUrl) {
-  if (!apiKey) throw new Error('未设置 API Key');
-  const provider = apiProvider;
-  const model = document.getElementById('modelSelect').value;
-  const base64 = imageDataUrl.split(',')[1];
-  const mimeType = imageDataUrl.match(/data:([^;]+)/)?.[1] || 'image/png';
-
-  let resp, resultText;
-
-  if (provider === 'groq') {
-    // Groq - OpenAI compatible, fast, free tier, good CORS support
-    const resp_ = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: model,
-        messages: [{ role: 'user', content: [{ type: 'text', text: AI_PROMPT }, { type: 'image_url', image_url: { url: imageDataUrl } }] }],
-        max_tokens: 4096,
-        temperature: 0.1
-      })
-    });
-    resp = resp_;
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error?.message || 'HTTP ' + resp.status);
-    resultText = data.choices?.[0]?.message?.content;
-
-  } else if (provider === 'dashscope') {
-    const resp_ = await fetchWithTimeout('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: model,
-        input: { messages: [{ role: 'user', content: [{ text: AI_PROMPT }, { image: base64 }] }] },
-        parameters: { result_format: 'message', max_tokens: 4096, temperature: 0.1 }
-      })
-    });
-    resp = resp_;
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.message || 'HTTP ' + resp.status);
-    resultText = data.output?.choices?.[0]?.message?.content;
-
-  } else {
-    const resp_ = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: AI_PROMPT }, { inline_data: { mime_type: mimeType, data: base64 } }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
-      })
-    });
-    resp = resp_;
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error?.message || 'HTTP ' + resp.status);
-    resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  }
-
-  if (!resultText) throw new Error('API 返回为空');
-
-  let result = extractJSON(resultText);
-  if (!result) throw new Error('JSON 解析失败，AI返回格式异常。原始响应前200字符: ' + resultText.substring(0,200));
-  return result;
-}
-
-// Robust JSON extraction
-function extractJSON(text) {
-  text = text.trim();
-  // Direct parse
-  try { return JSON.parse(text); } catch(e) {}
-  // Markdown code block
-  const cb = text.match(/```json\s*\n?([\s\S]*?)\n?\s*```/);
-  if (cb) try { return JSON.parse(cb[1].trim()); } catch(e) {}
-  // Find first balanced {}
-  for (let i = 0; i < text.length; i++) {
-    if (text[i] === '{') {
-      let depth = 0, inStr = false, esc = false;
-      for (let j = i; j < text.length; j++) {
-        const c = text[j];
-        if (esc) { esc = false; continue; }
-        if (c === '\\') { esc = true; continue; }
-        if (!inStr && c === '"') { inStr = true; continue; }
-        if (inStr && c === '"') { inStr = false; continue; }
-        if (!inStr) { if (c === '{') depth++; else if (c === '}') { depth--; if (depth === 0) { try { return JSON.parse(text.substring(i, j+1)); } catch(e) {} } } }
-      }
-    }
-  }
-  return null;
-}
-
-// ============================================================
-//  OFFLINE SOBEL ENGINE (Fallback)
-// ============================================================
-
-function analyzeOffline() {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  const w = Math.min(currentImage.naturalWidth, 512);
-  const h = Math.round(w * currentImage.naturalHeight / currentImage.naturalWidth);
-  canvas.width = w; canvas.height = h;
-  ctx.drawImage(currentImage, 0, 0, w, h);
-  const imgData = ctx.getImageData(0, 0, w, h);
-
-  const gray = toGrayscale(imgData);
-  const edges = sobelEdgeDetect(gray, w, h);
-  const stats = computeRegionStats(edges, gray, w, h);
-  const gae = stats.reduce((a, r) => a + r.edgeDensity, 0) / stats.length;
-
-  // Feature detection
-  const cand = stats.filter(r => r.anomalyScore > gae * 1.5 && r.avgBrightness > 25 && r.avgBrightness < 240).slice(0, 12);
-  const features = [];
-  const regions = [];
-
-  for (const r of cand) {
-    const f = [];
-    if (r.avgBrightness > 150 && r.maxEdge > 200) f.push('erythema');
-    if (r.maxEdge > 350 && r.avgBrightness > 120 && r.avgBrightness < 210) f.push('papule');
-    if (r.avgBrightness > 180 && r.lineStrength > gae * 2) f.push('pustule');
-    if (r.avgBrightness > 140 && r.avgBrightness < 200 && r.edgeDensity < gae * 1.8 && r.maxEdge < 500) f.push('scaling');
-    if (r.avgBrightness > 130 && r.maxEdge < 300) f.push('oozing');
-    if (r.maxEdge > 200 && r.maxEdge < 500 && r.avgBrightness < 130) f.push('wound');
-    if (r.avgBrightness > 170 && r.lineStrength > gae * 2.5) f.push('scab');
-    if (f.length > 0) {
-      features.push(...f);
-      regions.push({...r, feats: f});
-    }
-  }
-
-  const uf = [...new Set(features)];
-
-  // Tinea ring detection
-  const edgeActive = stats.filter(r => r.isEdge && r.maxEdge > 250 && r.edgeDensity > gae * 1.6 && r.avgBrightness > 135);
-  const centerCalm = stats.filter(r => !r.isEdge && r.avgBrightness > 95 && r.avgBrightness < 175 && r.edgeDensity < gae * 1.3);
-  const tineaDetected = edgeActive.length >= 3 && centerCalm.length >= 2;
-
-  // Diffuse red detection (dermatitis)
-  const diffuseRed = stats.filter(r => r.avgBrightness > 140 && r.avgBrightness < 200 && r.maxEdge < 350 && r.edgeDensity < gae * 1.5 && !r.isEdge);
-
-  // Condition matching
-  const conds = [
-    {key:'acne', name:'痤疮', en:'Acne', feats:['papule','pustule','erythema'], need:2},
-    {key:'dermatitis', name:'过敏性皮炎', en:'Contact Dermatitis', feats:['erythema','scaling','oozing'], need:2},
-    {key:'tinea', name:'体癣', en:'Tinea Corporis', feats:['erythema','scaling'], need:1, tineaReq:true},
-    {key:'eczema', name:'干性湿疹', en:'Dry Eczema', feats:['scaling','erythema'], need:2},
-    {key:'abrasion', name:'皮肤擦伤', en:'Skin Abrasion', feats:['wound','scab'], need:1}
-  ];
-
-  let best = null, bestScore = 0;
-  for (const c of conds) {
-    let s = 0;
-    for (const f of c.feats) if (uf.includes(f)) s += 2;
-    if (c.tineaReq && !tineaDetected) s = 0;
-    if (s >= (c.need || 2) && s > bestScore) { bestScore = s; best = c; }
-  }
-
-  // Temp red exclusion
-  const tempRedRegions = stats.filter(r => r.avgBrightness > 140 && r.avgBrightness < 200 && r.maxEdge < 200 && !r.isEdge);
-  const exclusions = [];
-  if (tempRedRegions.length >= 4 && (!best || best.key === 'dermatitis')) {
-    exclusions.push({item_zh:'临时性泛红', item_en:'Temporary redness', reason_zh:'均匀淡红，无小疙瘩或脱皮'});
-  }
-
-  // Build findings
-  const lesions = regions.slice(0, 5).map((r, i) => ({
-    type: r.feats[0] || 'lesion',
-    type_zh: featureNameZh(r.feats[0] || 'lesion'),
-    x: r.x / w, y: r.y / h,
-    width: 0.08 + Math.random() * 0.06,
-    height: 0.08 + Math.random() * 0.06,
-    confidence: 50 + Math.floor(Math.random() * 30),
-    description_zh: `检测到${featureNameZh(r.feats[0]||'异常')}特征`,
-    description_en: `Detected ${r.feats[0]||'abnormal'} feature`
-  }));
-
-  const inflamGrade = uf.includes('wound') && uf.includes('oozing') ? 4 : 
-    uf.includes('pustule') ? 3 : uf.includes('papule') && uf.includes('erythema') ? 2 : 
-    uf.includes('erythema') ? 1 : 0;
-
-  return {
-    primary_condition: {
-      name_en: best ? best.en : (tempRedRegions.length >= 4 ? 'Temporary Irritation' : 'Normal Skin'),
-      name_zh: best ? best.name : (tempRedRegions.length >= 4 ? '暂时性刺激' : '正常皮肤'),
-      confidence: best ? 60 + Math.floor(Math.random()*25) : 85,
-      type: best ? best.key : (tempRedRegions.length >= 4 ? 'unknown' : 'normal')
-    },
-    lesions,
-    inflammation: {
-      grade: inflamGrade || (best ? 2 : 0),
-      grade_desc_zh: inflamGrade === 4 ? 'IV级极重度' : inflamGrade === 3 ? 'III级重度' : inflamGrade === 2 ? 'II级中度' : inflamGrade === 1 ? 'I级轻度' : '无明显炎症',
-      grade_desc_en: ''
-    },
-    healing_stage: { stage: 'none', desc_zh: '不涉及创面愈合', desc_en: '' },
-    tinea_differential: {
-      is_tinea: best?.key === 'tinea' || false,
-      reason_zh: tineaDetected ? '检测到环形红斑+外圈脱屑+中心变淡' : '未检测到完整环形病灶结构',
-      ringworm_detected: tineaDetected
-    },
-    area_analysis: {
-      affected_ratio: regions.length > 0 ? Math.min(0.35, regions.length * 0.03) : 0,
-      estimated_area_cm2: regions.length > 0 ? regions.length * 0.8 : 0,
-      severity_distribution: {mild:.4, moderate:.35, severe:.25}
-    },
-    exclusions,
-    recommendations_zh: best ? getCareAdvice(best.key) : ['保持皮肤清洁干燥', '观察即可'],
-    recommendations_en: [],
-    follow_up: { need_doctor: inflamGrade >= 3, urgency: inflamGrade >= 4 ? 'high' : inflamGrade >= 3 ? 'medium' : 'low', reason_zh: inflamGrade >= 3 ? '炎症较严重，建议就医' : '可先居家护理观察' }
-  };
-}
-
-function featureNameZh(f) {
-  const map = {eryma:'红斑',papule:'丘疹',pustule:'脓疱',scaling:'脱屑',oozing:'渗液',wound:'创面',scab:'结痂',lesion:'病灶',erythema:'红斑'};
-  return map[f] || f;
-}
-function getCareAdvice(key) {
-  const map = {
-    acne: ['温和清洁面部，每日2次', '避免挤压痘痘', '使用含水杨酸或果酸的护肤品'],
-    dermatitis: ['避免接触过敏原', '使用温和无香料保湿霜', '瘙痒时可冷敷'],
-    tinea: ['保持患处干燥透气', '使用抗真菌药膏（如酮康唑）', '避免抓挠，防止扩散'],
-    eczema: ['大量涂抹保湿霜，每日多次', '避免热水烫洗', '穿棉质宽松衣物'],
-    abrasion: ['保持创面清洁', '使用碘伏消毒后覆盖无菌敷料', '避免撕扯结痂']
-  };
-  return map[key] || ['保持皮肤清洁', '避免刺激', '观察变化'];
-}
-
-// Image processing utilities
-function toGrayscale(imgData) {
-  const d = imgData.data, g = new Float32Array(d.length/4);
-  for (let i=0,j=0; i<d.length; i+=4,j++) g[j] = d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
-  return g;
-}
-function sobelEdgeDetect(gray, w, h) {
-  const gx=[-1,0,1,-2,0,2,-1,0,1], gy=[-1,-2,-1,0,0,0,1,2,1];
-  const mag = new Float32Array(w*h);
-  for (let y=1; y<h-1; y++) for (let x=1; x<w-1; x++) {
-    let sx=0, sy=0;
-    for (let ky=-1; ky<=1; ky++) for (let kx=-1; kx<=1; kx++) {
-      const idx=(y+ky)*w+(x+kx), kidx=(ky+1)*3+(kx+1);
-      sx+=gray[idx]*gx[kidx]; sy+=gray[idx]*gy[kidx];
-    }
-    mag[y*w+x]=Math.sqrt(sx*sx+sy*sy);
-  }
-  return {mag,w,h};
-}
-function computeRegionStats(edges, gray, w, h) {
-  const rx=8, ry=8, rw=Math.floor(w/rx), rh=Math.floor(h/ry);
-  const stats=[];
-  for (let ryi=0; ryi<ry; ryi++) for (let rxi=0; rxi<rx; rxi++) {
-    const x0=rxi*rw, y0=ryi*rh;
-    let edgeSum=0, brightSum=0, pc=0, maxE=0;
-    const eVals=[];
-    for (let y=y0; y<y0+rh&&y<h; y++) for (let x=x0; x<x0+rw&&x<w; x++) {
-      const idx=y*w+x, m=edges.mag[idx];
-      edgeSum+=m; eVals.push(m); brightSum+=gray[idx]; pc++;
-      if (m>maxE) maxE=m;
-    }
-    eVals.sort((a,b)=>b-a);
-    const top5=eVals.slice(0,Math.max(1,Math.floor(eVals.length*0.05)));
-    const ls=top5.reduce((a,b)=>a+b,0)/top5.length;
-    const ab=brightSum/(pc||1);
-    stats.push({rxi,ryi,x:x0+rw/2,y:y0+rh/2,edgeDensity:edgeSum/(pc||1),avgBrightness:ab,maxEdge:maxE,lineStrength:ls,anomalyScore:ls*(1+Math.abs(128-ab)/128)*(1+maxE/500),isEdge:(rxi<=1||rxi>=6||ryi<=1||ryi>=6)});
-  }
-  return stats.sort((a,b)=>b.anomalyScore-a.anomalyScore);
-}
-
-// ============================================================
-//  MAIN ANALYSIS FLOW
-// ============================================================
-
-async function runAnalysis() {
-  if (!currentImage) { showToast('请先上传图片', 'error'); return; }
-  const btn = document.getElementById('analyzeBtn');
-  const spinner = document.getElementById('spinner');
-  const btnText = document.getElementById('btnText');
-  function resetBtn() { btn.disabled = false; spinner.classList.remove('show'); btnText.textContent = '重新分析'; }
-  btn.disabled = true;
-  spinner.classList.add('show');
-  clearLog();
-  let aiResult = null, offlineResult = null;
-  try {
-    // ===== AI Vision Analysis =====
-    if ((currentEngine === 'gemini' || currentEngine === 'both') && apiKey) {
-      logStep('正在调用 ' + providerName(apiProvider) + ' AI API...', 'current');
-      try {
-        aiResult = await analyzeWithAI(document.getElementById('skinImg').src);
-        logStep('✅ ' + providerName(apiProvider) + ' AI 分析完成', 'done');
-      } catch(e) {
-        logStep('❌ ' + providerName(apiProvider) + ' API 失败: ' + e.message, 'error');
-        if (currentEngine === 'gemini') { showToast(providerName(apiProvider) + ' API 失败: ' + e.message, 'error'); resetBtn(); return; }
-      }
-    } else if (currentEngine === 'gemini' && !apiKey) { showToast('请先设置 API Key', 'error'); resetBtn(); return; }
-    // ===== Offline Analysis =====
-    if (currentEngine === 'offline' || currentEngine === 'both' || !aiResult) {
-      logStep('正在运行离线 Sobel 分析引擎...', 'current');
-      await new Promise(r => setTimeout(r, 600));
-      offlineResult = analyzeOffline();
-      logStep('✅ 离线引擎分析完成', 'done');
-    }
-    const result = aiResult || offlineResult;
-    if (!result) { showToast('分析失败', 'error'); return; }
-    findings = result.lesions || [];
-    renderResults(result, aiResult, offlineResult);
-    drawAnnotations(result.lesions || []);
-    generateHeatmap(result);
-    buildReport(result);
-    showToast('分析完成！', 'success');
-  } catch(err) { showToast('分析异常: ' + err.message, 'error'); logStep('❌ 系统异常: ' + err.message, 'error'); }
-  finally { resetBtn(); }
-}
-
-// ============================================================
-//  RESULTS RENDERING
-// ============================================================
-
-function renderResults(result, aiRes, offlineResult) {
-  const area = document.getElementById('resultsArea');
-  const pc = result.primary_condition;
-  const infl = result.inflammation;
-  const tinea = result.tinea_differential;
-  const area_a = result.area_analysis;
-  let html = '';
-
-  // Engine badge
-  const isAI = !!aiRes;
-  const isOffline = !!offlineResult;
-  html += '<div style="display:flex;gap:6px;margin-bottom:10px">';
-  if (isAI) html += '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(139,92,246,.15);color:#A78BFA">🧠 AI分析</span>';
-  if (isOffline) html += '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(245,158,11,.15);color:#F59E0B">📴 离线引擎</span>';
-  html += '</div>';
-
-  // Primary Condition
-  html += '<div class="findings-section-title">🔬 主要诊断</div>';
-  html += '<div class="finding-item">';
-  html += '<span class="finding-tag ' + (pc.type || 'ai') + '">' + (pc.name_zh || pc.name_en) + '</span>';
-  html += '<div class="finding-name">' + (pc.name_zh || pc.name_en) + ' <span style="color:#64748B;font-size:11px">(' + pc.name_en + ')</span></div>';
-  html += '<div class="confidence-bar"><div class="confidence-fill" style="width:' + (pc.confidence || 0) + '%;background:' + confidenceColor(pc.confidence) + '"></div></div>';
-  html += '<div class="finding-meta">置信度: ' + (pc.confidence || 0) + '% | 引擎: ' + (isAI ? 'AI' : 'Sobel离线') + '</div>';
-  html += '</div>';
-
-  // Lesions with bounding boxes
-  if (result.lesions && result.lesions.length > 0) {
-    html += '<div class="findings-section-title">📍 病灶位置 (' + result.lesions.length + ')</div>';
-    result.lesions.forEach((l, i) => {
-      html += '<div class="finding-item" style="cursor:pointer" onclick="highlightLesion(' + i + ')">';
-      html += '<div class="finding-name">#' + (i+1) + ' ' + (l.type_zh || l.type) + '</div>';
-      html += '<div class="finding-desc">' + (l.description_zh || '') + '</div>';
-      html += '<div class="confidence-bar"><div class="confidence-fill" style="width:' + (l.confidence || 50) + '%;background:' + confidenceColor(l.confidence) + '"></div></div>';
-      html += '<div class="finding-meta">置信度: ' + (l.confidence || '?') + '% | 位置: (' + (l.x?.toFixed(2)||'?') + ',' + (l.y?.toFixed(2)||'?') + ')</div>';
-      html += '</div>';
-    });
-  }
-
-  // Inflammation Grade
-  if (infl && infl.grade > 0) {
-    html += '<div class="findings-section-title">🔥 炎症分级</div>';
-    html += '<div class="finding-item">';
-    const gkey = infl.grade === 1 ? 'mild' : infl.grade === 4 ? 'severe' : 'moderate';
-    html += '<span class="finding-tag ' + gkey + '">' + infl.grade_desc_zh + '</span>';
-    html += '<div class="finding-desc">' + infl.grade_desc_en + '</div>';
-    html += '</div>';
-  }
-
-  // Tinea Differential
-  if (tinea) {
-    html += '<div class="findings-section-title">🍄 体癣专项鉴别</div>';
-    html += '<div class="finding-item">';
-    html += '<span class="finding-tag ' + (tinea.is_tinea ? 'tinea' : 'mild') + '">' + (tinea.is_tinea ? '⚠️ 疑似体癣' : '✅ 排除体癣') + '</span>';
-    html += '<div class="finding-desc" style="margin-top:6px">' + (tinea.reason_zh || '') + '</div>';
-    if (tinea.ringworm_detected) html += '<div style="margin-top:6px;font-size:10px;color:#A78BFA">🔍 检测到环形病灶特征</div>';
-    html += '</div>';
-  }
-
-  // Area Analysis
-  if (area_a) {
-    html += '<div class="findings-section-title">📊 面积分析</div>';
-    html += '<div class="area-stats">';
-    html += '<div class="area-stat"><div class="area-stat-value">' + ((area_a.affected_ratio || 0)*100).toFixed(1) + '%</div><div class="area-stat-label">受影响面积</div></div>';
-    html += '<div class="area-stat"><div class="area-stat-value">~' + (area_a.estimated_area_cm2 || 0).toFixed(1) + '</div><div class="area-stat-label">估计面积(cm²)</div></div>';
-    html += '<div class="area-stat"><div class="area-stat-value">' + (result.lesions ? result.lesions.length : 0) + '</div><div class="area-stat-label">检测病灶数</div></div>';
-    html += '</div>';
-    html += '<div class="heatmap-legend"><span>轻</span><div class="heatmap-gradient"></div><span>重</span></div>';
-  }
-
-  // Exclusions
-  if (result.exclusions && result.exclusions.length > 0) {
-    html += '<div class="findings-section-title">🛡️ 已排除项 (' + result.exclusions.length + ')</div>';
-    result.exclusions.forEach(ex => {
-      html += '<div class="finding-item" style="opacity:.7">';
-      html += '<div class="finding-name" style="font-size:11px;color:#64748B">✓ ' + (ex.item_zh || ex.item_en) + '</div>';
-      html += '<div class="finding-desc" style="font-size:10px">' + (ex.reason_zh || '') + '</div>';
-      html += '</div>';
-    });
-  }
-
-  // Recommendations
-  if (result.recommendations_zh && result.recommendations_zh.length > 0) {
-    html += '<div class="findings-section-title">💊 护理建议</div>';
-    result.recommendations_zh.forEach(r => {
-      html += '<div class="finding-item">';
-      html += '<div class="finding-desc">• ' + r + '</div>';
-      html += '</div>';
-    });
-  }
-
-  // Follow up
-  if (result.follow_up) {
-    html += '<div class="findings-section-title">🏥 就医建议</div>';
-    html += '<div class="finding-item">';
-    const colors = {low:'#10B981', medium:'#F59E0B', high:'#EF4444', emergency:'#DC2626'};
-    html += '<div class="finding-name" style="color:' + (colors[result.follow_up.urgency] || '#94A3B8') + '">' + (result.follow_up.need_doctor ? '⚠️ 建议就医' : '✅ 可先居家观察') + '</div>';
-    html += '<div class="finding-desc">' + (result.follow_up.reason_zh || '') + '</div>';
-    html += '</div>';
-  }
-
-  // Report button
-  html += '<div class="btn-row">';
-  html += '<button onclick="showReport()">📋 查看完整报告</button>';
-  html += '</div>';
-
-  area.innerHTML = html;
-}
-
-function confidenceColor(v) {
-  if (!v) return '#334155';
-  if (v >= 80) return '#10B981';
-  if (v >= 60) return '#F59E0B';
-  return '#EF4444';
-}
-
-// ============================================================
-//  CANVAS VISUALIZATION
-// ============================================================
-
-function drawAnnotations(lesions) {
-  const canvas = document.getElementById('annoCanvas');
-  const ctx = canvas.getContext('2d');
-  const img = document.getElementById('skinImg');
-  canvas.width = img.offsetWidth;
-  canvas.height = img.offsetHeight;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const colors = ['#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#60A5FA', '#EC4899', '#A78BFA', '#34D399'];
-
-  lesions.forEach((l, i) => {
-    const cx = l.x * canvas.width;
-    const cy = l.y * canvas.height;
-    const lw = (l.width || 0.1) * canvas.width;
-    const lh = (l.height || 0.1) * canvas.height;
-    const color = colors[i % colors.length];
-
-    // Glow effect
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 12;
-
-    // Rectangle
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash([]);
-    ctx.strokeRect(cx - lw/2, cy - lh/2, lw, lh);
-
-    // Reset shadow
-    ctx.shadowBlur = 0;
-
-    // Label background
-    const label = '#' + (i+1) + ' ' + (l.type_zh || l.type);
-    ctx.font = 'bold 12px sans-serif';
-    const tw = ctx.measureText(label).width;
-    ctx.fillStyle = color + 'CC';
-    ctx.fillRect(cx - lw/2, cy - lh/2 - 20, tw + 12, 20);
-
-    // Label text
-    ctx.fillStyle = '#fff';
-    ctx.fillText(label, cx - lw/2 + 6, cy - lh/2 - 6);
-
-    // Center dot
-    ctx.beginPath();
-    ctx.arc(cx, cy, 3, 0, Math.PI*2);
-    ctx.fillStyle = color;
-    ctx.fill();
-  });
-}
-
-function generateHeatmap(result) {
-  const canvas = document.getElementById('heatmapCanvas');
-  const ctx = canvas.getContext('2d');
-  const img = document.getElementById('skinImg');
-  canvas.width = img.offsetWidth;
-  canvas.height = img.offsetHeight;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const lesions = result.lesions || [];
-  if (lesions.length === 0) return;
-
-  // Create radial gradient heatmap for each lesion
-  lesions.forEach((l, i) => {
-    const cx = l.x * canvas.width;
-    const cy = l.y * canvas.height;
-    const radius = Math.max((l.width || 0.15) * canvas.width, (l.height || 0.15) * canvas.height) * 0.8;
-    const conf = (l.confidence || 50) / 100;
-
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    if (conf > 0.7) {
-      grad.addColorStop(0, 'rgba(239,68,68,' + (conf * 0.5) + ')');
-      grad.addColorStop(0.6, 'rgba(245,158,11,' + (conf * 0.3) + ')');
-    } else if (conf > 0.4) {
-      grad.addColorStop(0, 'rgba(245,158,11,' + (conf * 0.45) + ')');
-      grad.addColorStop(0.6, 'rgba(16,185,129,' + (conf * 0.2) + ')');
-    } else {
-      grad.addColorStop(0, 'rgba(16,185,129,' + (conf * 0.4) + ')');
-    }
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-
-    ctx.fillStyle = grad;
-    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
-  });
-}
-
-function highlightLesion(idx) {
-  const canvas = document.getElementById('annoCanvas');
-  const ctx = canvas.getContext('2d');
-  if (!findings[idx]) return;
-  const l = findings[idx];
-  const cx = l.x * canvas.width;
-  const cy = l.y * canvas.height;
-
-  // Flash effect
-  let frame = 0;
-  const animate = () => {
-    frame++;
-    const alpha = Math.sin(frame * 0.15) * 0.3 + 0.5;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 15 + frame, 0, Math.PI*2);
-    ctx.strokeStyle = 'rgba(255,255,255,' + alpha + ')';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    if (frame < 30) requestAnimationFrame(animate);
-    else drawAnnotations(findings);
-  };
-  animate();
-}
-
-// ============================================================
-//  REPORT GENERATION
-// ============================================================
-
-function buildReport(result) {
-  const pc = result.primary_condition;
-  const infl = result.inflammation;
-  const tinea = result.tinea_differential;
-  const area = result.area_analysis;
-  const now = new Date().toLocaleString();
-
-  let r = '═══════════════════════════════════════════\n';
-  r += '  DermaScan Pro - 皮肤AI分析报告\n';
-  r += '  时间: ' + now + '\n';
-  r += '  引擎: ' + (result._engine || 'Gemini AI + 离线引擎') + '\n';
-  r += '═══════════════════════════════════════════\n\n';
-
-  r += '【主要诊断】\n';
-  r += '  名称: ' + (pc.name_zh || '') + ' (' + pc.name_en + ')\n';
-  r += '  置信度: ' + (pc.confidence || '?') + '%\n';
-  r += '  类型编码: ' + (pc.type || 'unknown') + '\n\n';
-
-  if (result.lesions && result.lesions.length > 0) {
-    r += '【病灶位置】(' + result.lesions.length + '处)\n';
-    result.lesions.forEach((l, i) => {
-      r += '  [' + (i+1) + '] ' + (l.type_zh || l.type) + '\n';
-      r += '      坐标: (' + (l.x?.toFixed(3) || '?') + ', ' + (l.y?.toFixed(3) || '?') + ')\n';
-      r += '      描述: ' + (l.description_zh || '') + '\n';
-      r += '      置信度: ' + (l.confidence || '?') + '%\n\n';
-    });
-  }
-
-  if (infl && infl.grade > 0) {
-    r += '【炎症分级】\n';
-    r += '  ' + infl.grade_desc_zh + '\n\n';
-  }
-
-  if (tinea) {
-    r += '【体癣专项鉴别】\n';
-    r += '  ' + (tinea.is_tinea ? '⚠️ 疑似体癣' : '✅ 排除体癣') + '\n';
-    r += '  依据: ' + (tinea.reason_zh || '') + '\n';
-    if (tinea.ringworm_detected) r += '  环形病灶: 已检测到\n';
-    r += '\n';
-  }
-
-  if (area) {
-    r += '【面积分析】\n';
-    r += '  受影响比例: ' + ((area.affected_ratio || 0)*100).toFixed(1) + '%\n';
-    r += '  估计面积: ~' + (area.estimated_area_cm2 || 0).toFixed(1) + ' cm²\n';
-    r += '  轻度区域: ' + ((area.severity_distribution?.mild || 0)*100).toFixed(0) + '%\n';
-    r += '  中度区域: ' + ((area.severity_distribution?.moderate || 0)*100).toFixed(0) + '%\n';
-    r += '  重度区域: ' + ((area.severity_distribution?.severe || 0)*100).toFixed(0) + '%\n\n';
-  }
-
-  if (result.exclusions && result.exclusions.length > 0) {
-    r += '【已排除干扰项】\n';
-    result.exclusions.forEach(ex => {
-      r += '  ✓ ' + (ex.item_zh || ex.item_en) + ' - ' + (ex.reason_zh || '') + '\n';
-    });
-    r += '\n';
-  }
-
-  if (result.recommendations_zh && result.recommendations_zh.length > 0) {
-    r += '【护理建议】\n';
-    result.recommendations_zh.forEach(rec => r += '  • ' + rec + '\n');
-    r += '\n';
-  }
-
-  if (result.follow_up) {
-    r += '【就医建议】\n';
-    r += '  ' + (result.follow_up.need_doctor ? '⚠️ 建议就医' : '✅ 可先居家观察') + '\n';
-    r += '  ' + (result.follow_up.reason_zh || '') + '\n';
-    r += '  紧急程度: ' + (result.follow_up.urgency || 'low') + '\n\n';
-  }
-
-  r += '═══════════════════════════════════════════\n';
-  r += '⚠️ 免责声明: 本分析仅供参考，不能替代专业\n';
-  r += '   医疗诊断。如有疑虑请咨询皮肤科医生。\n';
-  r += '═══════════════════════════════════════════\n';
-
-  analysisReport = r;
-}
-
-function showReport() {
-  if (!analysisReport) { showToast('请先进行分析', 'error'); return; }
-  document.getElementById('reportBody').innerHTML = '<pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;line-height:1.8;color:#CBD5E1">' + analysisReport.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
-  document.getElementById('reportModal').classList.add('active');
-}
-function closeReport() { document.getElementById('reportModal').classList.remove('active'); }
-function copyReport() {
-  navigator.clipboard.writeText(analysisReport).then(() => showToast('报告已复制', 'success'))
-  .catch(() => { const t = document.createElement('textarea'); t.value = analysisReport; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); showToast('报告已复制', 'success'); });
-}
-function exportTXT() {
-  const blob = new Blob([analysisReport], {type:'text/plain;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'DermaScan_Report_' + imageId + '.txt';
-  a.click(); URL.revokeObjectURL(url);
-  showToast('TXT 已导出', 'success');
-}
-function exportPDF() {
-  const w = window.open('', '_blank');
-  w.document.write('<html><head><meta charset=utf-8><title>DermaScan Report</title>');
-  w.document.write('<style>body{font-family:sans-serif;padding:40px;background:#0F172A;color:#E2E8F0;font-size:13px;line-height:1.8}pre{white-space:pre-wrap}h2{color:#10B981}</style>');
-  w.document.write('</head><body><pre>' + analysisReport.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre></body></html>');
-  w.document.close();
-  setTimeout(() => w.print(), 300);
-}
-
-// ============================================================
-//  SAVE ANNOTATED IMAGE
-// ============================================================
-
-function saveAnnotated() {
-  if (!currentImage) { showToast('没有图片可保存', 'error'); return; }
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = currentImage.naturalWidth;
-  canvas.height = currentImage.naturalHeight;
-  ctx.drawImage(currentImage, 0, 0);
-
-  const scaleX = canvas.width / document.getElementById('skinImg').offsetWidth;
-  const scaleY = canvas.height / document.getElementById('skinImg').offsetHeight;
-
-  findings.forEach((f, i) => {
-    const cx = f.x * canvas.width;
-    const cy = f.y * canvas.height;
-    const lw = (f.width || 0.1) * canvas.width;
-    const lh = (f.height || 0.1) * canvas.height;
-    const colors = ['#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#60A5FA', '#EC4899'];
-    const color = colors[i % colors.length];
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(cx - lw/2, cy - lh/2, lw, lh);
-
-    const label = '#' + (i+1) + ' ' + (f.type_zh || f.type);
-    ctx.font = 'bold 16px sans-serif';
-    const tw = ctx.measureText(label).width;
-    ctx.fillStyle = color + 'DD';
-    ctx.fillRect(cx - lw/2, cy - lh/2 - 24, tw + 14, 24);
-    ctx.fillStyle = '#fff';
-    ctx.fillText(label, cx - lw/2 + 7, cy - lh/2 - 7);
-  });
-
-  ctx.font = '13px monospace';
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillText('DermaScan Pro | ' + imageId, 20, canvas.height - 20);
-
-  canvas.toBlob(blob => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'DermaScan_' + imageId + '.png';
-    a.click(); URL.revokeObjectURL(url);
-    showToast('标注图片已保存', 'success');
-  });
-}
-
-// ============================================================
-//  LANGUAGE SWITCH
-// ============================================================
-
-const I18N = {
-  zh: {
-    uploadText: '点击上传皮肤患处照片<br>支持 JPG, PNG, WEBP',
-    uploadHint: '支持拖拽上传',
-    analyze: '启动 AI 分析',
-    reanalyze: '重新分析',
-    brightness: '亮度',
-    contrast: '对比度',
-    zoom: '缩放',
-    heatmap: '热图',
-    reset: '重置',
-    save: '保存',
-    report: '查看完整报告',
-    noImage: '请先上传图片',
-    success: '分析完成！',
-    copy: '报告已复制',
-    exportTxt: 'TXT 已导出',
-    primaryDx: '主要诊断',
-    lesions: '病灶位置',
-    inflammation: '炎症分级',
-    tineaDiff: '体癣专项鉴别',
-    areaAnalysis: '面积分析',
-    exclusions: '已排除项',
-    recommendations: '护理建议',
-    followUp: '就医建议'
-  },
-  en: {
-    uploadText: 'Click to upload skin photo<br>Supports JPG, PNG, WEBP',
-    uploadHint: 'Drag & drop supported',
-    analyze: 'Start AI Analysis',
-    reanalyze: 'Re-analyze',
-    brightness: 'Brightness',
-    contrast: 'Contrast',
-    zoom: 'Zoom',
-    heatmap: 'Heatmap',
-    reset: 'Reset',
-    save: 'Save',
-    report: 'View Full Report',
-    noImage: 'Please upload an image',
-    success: 'Analysis complete!',
-    copy: 'Report copied',
-    exportTxt: 'TXT exported',
-    primaryDx: 'Primary Diagnosis',
-    lesions: 'Lesion Locations',
-    inflammation: 'Inflammation Grade',
-    tineaDiff: 'Tinea Differential',
-    areaAnalysis: 'Area Analysis',
-    exclusions: 'Exclusions',
-    recommendations: 'Recommendations',
-    followUp: 'Follow-up'
-  },
-  ko: {
-    uploadText: '피부 사진을 업로드하세요<br>JPG, PNG, WEBP 지원',
-    uploadHint: '드래그 앤 드롭 지원',
-    analyze: 'AI 분석 시작',
-    reanalyze: '재분석',
-    brightness: '밝기',
-    contrast: '대비',
-    zoom: '확대',
-    heatmap: '히트맵',
-    reset: '초기화',
-    save: '저장',
-    report: '전체 보고서',
-    noImage: '이미지를 업로드하세요',
-    success: '분석 완료!',
-    copy: '보고서 복사됨',
-    exportTxt: 'TXT 낳드림',
-    primaryDx: '주요 진단',
-    lesions: '병변 위치',
-    inflammation: '염증 등급',
-    tineaDiff: '백선증 감별',
-    areaAnalysis: '면적 분석',
-    exclusions: '제외 항목',
-    recommendations: '관리 권장',
-    followUp: '진료 권장'
-  }
-};
-
-function setLang(lang) {
-  currentLang = lang;
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
-  const t = I18N[lang];
-  document.querySelector('.upload-text').innerHTML = t.uploadText;
-  document.querySelector('.upload-hint').textContent = t.uploadHint;
-  // Update panel labels
-  const panels = document.querySelectorAll('.panel-title');
-  if (panels[1]) panels[1].textContent = (lang==='en'?'🎛 Image Controls':lang==='ko'?'🎛 이미지 조절':'🎛 图像调节');
-}
-
-// ============================================================
-//  KEYBOARD SHORTCUTS
-// ============================================================
-
-document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
-  if (e.key === '+' || e.key === '=') { e.preventDefault(); document.getElementById('zoom').value = Math.min(200, +document.getElementById('zoom').value+10); adjustZoom(); }
-  if (e.key === '-') { e.preventDefault(); document.getElementById('zoom').value = Math.max(50, +document.getElementById('zoom').value-10); adjustZoom(); }
-  if (e.key === 'r' || e.key === 'R') { e.preventDefault(); if (!document.getElementById('analyzeBtn').disabled) runAnalysis(); }
-  if (e.key === '0') { e.preventDefault(); resetAdjust(); }
-  if (e.key === 'h' || e.key === 'H') { e.preventDefault(); toggleHeatmap(); }
-  if (e.key === 'Escape') { closeReport(); }
-});
-
-// Modal click outside to close
-document.getElementById('reportModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('reportModal')) closeReport();
-});
-</script>
+    
+    <!-- 声光报警指示器 -->
+    <div class="alarm-indicator" id="alarmIndicator">🔔</div>
+    
+    <script>
+        // ==================== 配置 ====================
+        const ALERT_TYPES = {
+            NO_HELMET: { name: '未佩戴安全帽', level: 'high', icon: '⛑️', color: '#ff4444' },
+            NO_VEST: { name: '未穿荧光衣', level: 'medium', icon: '🦺', color: '#ffaa00' },
+            NO_UNIFORM: { name: '未穿劳保服', level: 'medium', icon: '👕', color: '#ffaa00' },
+            SLIPPERS: { name: '违规穿拖鞋', level: 'medium', icon: '🩴', color: '#ffaa00' },
+            CLIMBING: { name: '翻越防护栏', level: 'high', icon: '🚧', color: '#ff4444' },
+            RESTRICTED: { name: '进入高危禁区', level: 'high', icon: '🚫', color: '#ff4444' },
+            FALLEN: { name: '倒地受伤', level: 'high', icon: '🚑', color: '#ff4444' },
+            NEAR_MACHINE: { name: '靠近机械危险源', level: 'high', icon: '⚙️', color: '#ff4444' },
+            NO_BELT: { name: '登高未系安全带', level: 'high', icon: '🔗', color: '#ff4444' },
+            BELT_WRONG: { name: '安全带未高打低用', level: 'medium', icon: '🔗', color: '#ffaa00' }
+        };
+        
+        let alerts = [];
+        let aiDetections = 0;
+        let totalAlerts = 0;
+        let safeHours = 0;
+        let isAlarmPlaying = false;
+        let audioContext = null;
+        
+        // 违规统计
+        const violationStats = {
+            'NO_HELMET': 12,
+            'NO_VEST': 8,
+            'NO_UNIFORM': 5,
+            'SLIPPERS': 6,
+            'CLIMBING': 3,
+            'RESTRICTED': 2,
+            'FALLEN': 1,
+            'NEAR_MACHINE': 4,
+            'NO_BELT': 7,
+            'BELT_WRONG': 3
+        };
+        
+        // ==================== 初始化 ====================
+        function init() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            initCanvases();
+            renderChart();
+            updateStats();
+            startSimulation();
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = 
+                now.toLocaleTimeString('zh-CN', { hour12: false });
+            safeHours = (now.getHours() + now.getMinutes()/60).toFixed(1);
+            document.getElementById('safeHours').textContent = safeHours;
+        }
+        
+        // ==================== Canvas 绘制 ====================
+        function initCanvases() {
+            ['canvas1', 'canvas2', 'canvas3', 'canvas4'].forEach((id, idx) => {
+                const canvas = document.getElementById(id);
+                const parent = canvas.parentElement;
+                canvas.width = parent.clientWidth;
+                canvas.height = parent.clientHeight;
+                drawScene(canvas, idx);
+            });
+        }
+        
+        function drawScene(canvas, camIndex) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            // 背景
+            ctx.fillStyle = '#0a0f1a';
+            ctx.fillRect(0, 0, w, h);
+            
+            // 地面
+            ctx.fillStyle = '#1a2530';
+            ctx.fillRect(0, h*0.7, w, h*0.3);
+            
+            // 网格线（模拟监控画面）
+            ctx.strokeStyle = 'rgba(0, 212, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<w; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,h); ctx.stroke();
+            }
+            for(let i=0; i<h; i+=40) {
+                ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(w,i); ctx.stroke();
+            }
+            
+            // 根据摄像头绘制不同场景
+            if (camIndex === 0) {
+                // 主入口 - 未戴安全帽 + 穿拖鞋
+                drawPerson(ctx, w*0.3, h*0.55, { noHelmet: true, slippers: true });
+                drawPerson(ctx, w*0.6, h*0.55, { vest: true, helmet: true });
+                drawFence(ctx, w, h);
+                drawDetectionBox(ctx, w*0.25, h*0.45, w*0.18, h*0.35, 'NO_HELMET');
+                drawDetectionBox(ctx, w*0.55, h*0.45, w*0.18, h*0.35, 'SAFE');
+            } else if (camIndex === 1) {
+                // 高危禁区 - 闯入禁区
+                drawRestrictedZone(ctx, w, h);
+                drawPerson(ctx, w*0.7, h*0.5, { noHelmet: true, noUniform: true });
+                drawDetectionBox(ctx, w*0.65, h*0.4, w*0.18, h*0.35, 'RESTRICTED');
+            } else if (camIndex === 2) {
+                // 机械区 - 靠近机械 + 倒地
+                drawMachine(ctx, w*0.75, h*0.5);
+                drawPerson(ctx, w*0.55, h*0.55, { helmet: true, nearMachine: true });
+                drawFallenPerson(ctx, w*0.2, h*0.65);
+                drawDetectionBox(ctx, w*0.5, h*0.45, w*0.18, h*0.35, 'NEAR_MACHINE');
+                drawDetectionBox(ctx, w*0.15, h*0.55, w*0.2, h*0.15, 'FALLEN');
+            } else if (camIndex === 3) {
+                // 登高区 - 未系安全带 / 高打低用错误
+                drawPlatform(ctx, w, h);
+                drawPerson(ctx, w*0.3, h*0.4, { helmet: true, noBelt: true });
+                drawPerson(ctx, w*0.6, h*0.4, { helmet: true, beltWrong: true });
+                drawDetectionBox(ctx, w*0.25, h*0.3, w*0.18, h*0.35, 'NO_BELT');
+                drawDetectionBox(ctx, w*0.55, h*0.3, w*0.18, h*0.35, 'BELT_WRONG');
+            }
+            
+            // 时间戳
+            ctx.fillStyle = 'rgba(0, 212, 255, 0.7)';
+            ctx.font = '11px monospace';
+            ctx.fillText(new Date().toLocaleString('zh-CN'), 10, 20);
+            
+            // AI状态
+            ctx.fillStyle = 'rgba(0, 255, 136, 0.7)';
+            ctx.fillText('● AI识别中 | 置信度: 96.8%', 10, h-10);
+        }
+        
+        function drawPerson(ctx, x, y, opts = {}) {
+            const scale = 0.8;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            
+            // 身体
+            ctx.fillStyle = opts.noUniform ? '#cc6644' : '#3a5a7a';
+            if (opts.vest) {
+                ctx.fillStyle = '#ff6600';
+            }
+            ctx.fillRect(-20, 30, 40, 60);
+            
+            // 荧光衣反光条
+            if (opts.vest) {
+                ctx.fillStyle = '#ffcc00';
+                ctx.fillRect(-12, 40, 24, 40);
+            }
+            
+            // 头
+            ctx.fillStyle = '#ffaa88';
+            ctx.beginPath();
+            ctx.arc(0, 15, 14, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 安全帽
+            if (opts.helmet) {
+                ctx.fillStyle = '#ffcc00';
+                ctx.beginPath();
+                ctx.ellipse(0, 8, 18, 8, 0, 0, Math.PI*2);
+                ctx.fill();
+            }
+            
+            // 腿
+            ctx.fillStyle = '#2a4a6a';
+            if (opts.slippers) {
+                ctx.fillStyle = '#cc8866';
+            }
+            ctx.fillRect(-18, 90, 14, 40);
+            ctx.fillRect(4, 90, 14, 40);
+            
+            // 拖鞋
+            if (opts.slippers) {
+                ctx.fillStyle = '#ff8866';
+                ctx.fillRect(-20, 125, 18, 6);
+                ctx.fillRect(2, 125, 18, 6);
+            }
+            
+            // 安全带
+            if (opts.beltWrong || (!opts.noBelt && !opts.beltWrong)) {
+                ctx.strokeStyle = '#ffcc00';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-20, 35);
+                ctx.lineTo(-30, 10); // 高挂点
+                ctx.stroke();
+                
+                if (opts.beltWrong) {
+                    // 低挂点（错误）
+                    ctx.beginPath();
+                    ctx.moveTo(20, 35);
+                    ctx.lineTo(30, 80);
+                    ctx.stroke();
+                }
+            }
+            
+            ctx.restore();
+        }
+        
+        function drawFallenPerson(ctx, x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(-Math.PI/2);
+            ctx.scale(0.8, 0.8);
+            
+            ctx.fillStyle = '#3a5a7a';
+            ctx.fillRect(-20, 30, 40, 60);
+            ctx.fillStyle = '#ffaa88';
+            ctx.beginPath();
+            ctx.arc(0, 15, 14, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#ffcc00';
+            ctx.beginPath();
+            ctx.ellipse(0, 8, 18, 8, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#2a4a6a';
+            ctx.fillRect(-18, 90, 14, 40);
+            ctx.fillRect(4, 90, 14, 40);
+            
+            ctx.restore();
+        }
+        
+        function drawFence(ctx, w, h) {
+            ctx.strokeStyle = '#5a6a7a';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, h*0.85);
+            ctx.lineTo(w, h*0.85);
+            ctx.stroke();
+            
+            for(let i=20; i<w; i+=40) {
+                ctx.beginPath();
+                ctx.moveTo(i, h*0.85);
+                ctx.lineTo(i, h*0.75);
+                ctx.stroke();
+            }
+        }
+        
+        function drawMachine(ctx, x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.fillStyle = '#5a4a3a';
+            ctx.fillRect(-40, -50, 80, 100);
+            ctx.fillStyle = '#4a3a2a';
+            ctx.fillRect(-30, -40, 60, 80);
+            // 齿轮
+            ctx.fillStyle = '#8a7a6a';
+            ctx.beginPath();
+            ctx.arc(0, 0, 20, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        function drawRestrictedZone(ctx, w, h) {
+            ctx.strokeStyle = 'rgba(255, 68, 68, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([10, 5]);
+            ctx.strokeRect(w*0.6, h*0.2, w*0.35, h*0.5);
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(255, 68, 68, 0.08)';
+            ctx.fillRect(w*0.6, h*0.2, w*0.35, h*0.5);
+            ctx.fillStyle = 'rgba(255, 68, 68, 0.6)';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText('⚠ 高危禁区', w*0.72, h*0.45);
+        }
+        
+        function drawPlatform(ctx, w, h) {
+            ctx.fillStyle = '#3a4a5a';
+            ctx.fillRect(0, h*0.6, w, h*0.1);
+            ctx.fillStyle = '#2a3a4a';
+            ctx.fillRect(0, h*0.7, w, h*0.3);
+            // 护栏
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, h*0.5);
+            ctx.lineTo(w, h*0.5);
+            ctx.stroke();
+            for(let i=0; i<w; i+=50) {
+                ctx.beginPath();
+                ctx.moveTo(i, h*0.5);
+                ctx.lineTo(i, h*0.6);
+                ctx.stroke();
+            }
+        }
+        
+        function drawDetectionBox(ctx, x, y, w, h, type) {
+            const colors = {
+                'NO_HELMET': '#ff4444',
+                'SAFE': '#00ff88',
+                'RESTRICTED': '#ff4444',
+                'NEAR_MACHINE': '#ff4444',
+                'FALLEN': '#ff4444',
+                'NO_BELT': '#ff4444',
+                'BELT_WRONG': '#ffaa00'
+            };
+            const labels = {
+                'NO_HELMET': '未戴安全帽 96%',
+                'SAFE': '合规 98%',
+                'RESTRICTED': '禁区闯入 94%',
+                'NEAR_MACHINE': '靠近机械 91%',
+                'FALLEN': '倒地检测 97%',
+                'NO_BELT': '未系安全带 95%',
+                'BELT_WRONG': '安全带错误 89%'
+            };
+            
+            const color = colors[type] || '#00d4ff';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, w, h);
+            
+            // 标签背景
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y-20, ctx.measureText(labels[type]).width + 16, 20);
+            
+            // 标签文字
+            ctx.fillStyle = type === 'SAFE' ? '#000' : '#fff';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText(labels[type], x+8, y-5);
+        }
+        
+        // ==================== 预警系统 ====================
+        function addAlert(type, cam, detail) {
+            const alert = {
+                id: Date.now() + Math.random(),
+                type,
+                cam,
+                detail,
+                time: new Date().toLocaleTimeString('zh-CN'),
+                level: ALERT_TYPES[type].level
+            };
+            alerts.unshift(alert);
+            if (alerts.length > 20) alerts.pop();
+            
+            totalAlerts++;
+            aiDetections++;
+            updateStats();
+            renderAlertList();
+            
+            if (alert.level === 'high') {
+                showModal(alert);
+                playAlarm();
+            }
+        }
+        
+        function renderAlertList() {
+            const container = document.getElementById('alertList');
+            container.innerHTML = alerts.map(a => {
+                const t = ALERT_TYPES[a.type];
+                return `
+                    <div class="alert-item alert-level-${a.level}" onclick="showModalById(${a.id})">
+                        <div class="alert-icon">${t.icon}</div>
+                        <div class="alert-content">
+                            <div class="alert-type">${t.name}</div>
+                            <div class="alert-detail">${a.detail}</div>
+                            <div class="alert-time">${a.cam} · ${a.time}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function showModal(alert) {
+            const t = ALERT_TYPES[alert.type];
+            document.getElementById('modalTitle').textContent = `🚨 ${t.name}`;
+            document.getElementById('modalDesc').textContent = alert.detail;
+            document.getElementById('modalCam').textContent = alert.cam;
+            document.getElementById('modalTime').textContent = alert.time;
+            document.getElementById('alertModal').classList.add('active');
+            document.getElementById('alarmIndicator').classList.add('active');
+        }
+        
+        function showModalById(id) {
+            const alert = alerts.find(a => a.id === id);
+            if (alert) showModal(alert);
+        }
+        
+        function closeModal() {
+            document.getElementById('alertModal').classList.remove('active');
+            document.getElementById('alarmIndicator').classList.remove('active');
+            stopAlarm();
+        }
+        
+        function acknowledgeAlert() {
+            closeModal();
+            // 播放确认音
+            playBeep(800, 0.1, 0.1);
+        }
+        
+        // ==================== 声光报警 ====================
+        function playAlarm() {
+            if (isAlarmPlaying) return;
+            isAlarmPlaying = true;
+            
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const playPulse = () => {
+                if (!isAlarmPlaying) return;
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, audioContext.currentTime);
+                osc.frequency.setValueAtTime(660, audioContext.currentTime + 0.1);
+                
+                gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.3);
+                
+                setTimeout(playPulse, 500);
+            };
+            playPulse();
+        }
+        
+        function stopAlarm() {
+            isAlarmPlaying = false;
+        }
+        
+        function playBeep(freq, duration, vol) {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+            gain.gain.setValueAtTime(vol, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            osc.start();
+            osc.stop(audioContext.currentTime + duration);
+        }
+        
+        // ==================== 统计图表 ====================
+        function renderChart() {
+            const container = document.getElementById('chartContainer');
+            const maxVal = Math.max(...Object.values(violationStats));
+            
+            const colors = {
+                'NO_HELMET': '#ff4444',
+                'NO_VEST': '#ffaa00',
+                'NO_UNIFORM': '#ffaa00',
+                'SLIPPERS': '#ffaa00',
+                'CLIMBING': '#ff4444',
+                'RESTRICTED': '#ff4444',
+                'FALLEN': '#ff4444',
+                'NEAR_MACHINE': '#ff4444',
+                'NO_BELT': '#ff4444',
+                'BELT_WRONG': '#ffaa00'
+            };
+            
+            container.innerHTML = Object.entries(violationStats).map(([key, val]) => {
+                const t = ALERT_TYPES[key];
+                const pct = (val / maxVal * 100).toFixed(0);
+                return `
+                    <div class="chart-bar">
+                        <div class="chart-label">${t.name}</div>
+                        <div class="chart-track">
+                            <div class="chart-fill" style="width:${pct}%; background:${colors[key]};">
+                                <span>${val}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateStats() {
+            document.getElementById('totalAlerts').textContent = totalAlerts;
+            document.getElementById('pendingAlerts').textContent = alerts.filter(a => a.level === 'high').length;
+            document.getElementById('aiDetections').textContent = aiDetections;
+        }
+        
+        // ==================== 模拟数据 ====================
+        function startSimulation() {
+            // 初始预警
+            setTimeout(() => addAlert('NO_HELMET', 'CAM-01', '工人张某未佩戴安全帽进入主入口通道'), 2000);
+            setTimeout(() => addAlert('SLIPPERS', 'CAM-01', '工人李某违规穿着拖鞋进入厂区'), 5000);
+            setTimeout(() => addAlert('RESTRICTED', 'CAM-02', '检测到人员闯入高危禁区边界'), 8000);
+            setTimeout(() => addAlert('NO_BELT', 'CAM-04', '登高作业人员未按要求系挂安全带'), 12000);
+            
+            // 持续随机预警
+            setInterval(() => {
+                const types = Object.keys(ALERT_TYPES);
+                const type = types[Math.floor(Math.random() * types.length)];
+                const cams = ['CAM-01', 'CAM-02', 'CAM-03', 'CAM-04'];
+                const cam = cams[Math.floor(Math.random() * cams.length)];
+                const details = {
+                    'NO_HELMET': '检测到人员未佩戴安全帽',
+                    'NO_VEST': '施工人员未穿着反光背心',
+                    'NO_UNIFORM': '工人未按要求穿戴劳保服',
+                    'SLIPPERS': '检测到违规穿着拖鞋',
+                    'CLIMBING': '人员正在翻越防护围栏',
+                    'RESTRICTED': ' unauthorized entry into restricted zone',
+                    'FALLEN': '检测到人员倒地，可能受伤',
+                    'NEAR_MACHINE': '人员过于接近运转机械设备',
+                    'NO_BELT': '高处作业人员未系安全带',
+                    'BELT_WRONG': '安全带挂点位置错误，未做到高挂低用'
+                };
+                addAlert(type, cam, details[type]);
+            }, 15000);
+            
+            // 刷新画面
+            setInterval(() => {
+                ['canvas1', 'canvas2', 'canvas3', 'canvas4'].forEach((id, idx) => {
+                    const canvas = document.getElementById(id);
+                    drawScene(canvas, idx);
+                });
+            }, 100);
+        }
+        
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
+            initCanvases();
+        });
+        
+        // 启动
+        init();
+    </script>
 </body>
-</html>
+</html>'''
+
+# 保存文件
+with open('/mnt/agents/output/factory_ai_safety_monitor.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("文件已保存，大小:", len(html_content), "字符")
